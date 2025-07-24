@@ -33,6 +33,7 @@ type (
 	CreateSystemParams        = internaldb.CreateSystemParams
 	UpdateSystemParams        = internaldb.UpdateSystemParams
 	UpdateSystemContactParams = internaldb.UpdateSystemContactParams
+	SearchSystemsParams       = internaldb.SearchSystemsParams
 )
 
 // Re-export constructor

@@ -19,6 +19,7 @@ type Querier interface {
 	GetSystems(ctx context.Context) ([]System, error)
 	GetSystemsByEmail(ctx context.Context, mailaddress string) ([]System, error)
 	GetSystemsByLocalGovernment(ctx context.Context, localgovernmentid sql.NullString) ([]System, error)
+	SearchSystems(ctx context.Context, arg SearchSystemsParams) ([]System, error)
 	UpdateSystem(ctx context.Context, arg UpdateSystemParams) (System, error)
 	UpdateSystemContact(ctx context.Context, arg UpdateSystemContactParams) (System, error)
 }

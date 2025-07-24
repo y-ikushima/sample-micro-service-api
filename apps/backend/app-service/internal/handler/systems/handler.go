@@ -21,7 +21,21 @@ func NewHandler(systemsService systems_service.ServiceInterface) *Handler {
 
 // GetSystems - システム一覧取得
 func (h *Handler) GetSystems(c *gin.Context) {
-	systems, err := h.systemsService.GetSystems(c.Request.Context())
+	// クエリパラメータを取得
+	systemName := c.Query("systemName")
+	email := c.Query("email")
+	localGovernmentId := c.Query("localGovernmentId")
+
+	var systems []appservice.ModelSystem
+	var err error
+
+	// 検索パラメータが指定されている場合は検索を実行、そうでなければ全件取得
+	if systemName != "" || email != "" || localGovernmentId != "" {
+		systems, err = h.systemsService.SearchSystems(c.Request.Context(), systemName, email, localGovernmentId)
+	} else {
+		systems, err = h.systemsService.GetSystems(c.Request.Context())
+	}
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, appservice.CommonError{
 			Status: http.StatusInternalServerError,

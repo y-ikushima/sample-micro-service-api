@@ -224,6 +224,55 @@ func (q *Queries) GetSystemsByLocalGovernment(ctx context.Context, localgovernme
 	return items, nil
 }
 
+const searchSystems = `-- name: SearchSystems :many
+SELECT id, "systemName", "localGovernmentId", "createdAt", "updatedAt", 
+       "mailAddress", telephone, remark
+FROM public.system
+WHERE 
+  (CASE WHEN $1::text != '' THEN "systemName" ILIKE '%' || $1 || '%' ELSE TRUE END)
+  AND (CASE WHEN $2::text != '' THEN "mailAddress" = $2 ELSE TRUE END)
+  AND (CASE WHEN $3::text != '' THEN "localGovernmentId" = $3 ELSE TRUE END)
+ORDER BY "createdAt" DESC
+`
+
+type SearchSystemsParams struct {
+	Column1 string `json:"column_1"`
+	Column2 string `json:"column_2"`
+	Column3 string `json:"column_3"`
+}
+
+func (q *Queries) SearchSystems(ctx context.Context, arg SearchSystemsParams) ([]System, error) {
+	rows, err := q.db.QueryContext(ctx, searchSystems, arg.Column1, arg.Column2, arg.Column3)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []System
+	for rows.Next() {
+		var i System
+		if err := rows.Scan(
+			&i.ID,
+			&i.SystemName,
+			&i.LocalGovernmentId,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+			&i.MailAddress,
+			&i.Telephone,
+			&i.Remark,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const updateSystem = `-- name: UpdateSystem :one
 UPDATE public.system
 SET "systemName" = $2, "localGovernmentId" = $3, "mailAddress" = $4, 

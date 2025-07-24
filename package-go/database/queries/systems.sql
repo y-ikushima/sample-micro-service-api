@@ -54,3 +54,13 @@ RETURNING id, "systemName", "localGovernmentId", "createdAt", "updatedAt",
 -- name: DeleteSystem :exec
 DELETE FROM public.system
 WHERE id = $1; 
+
+-- name: SearchSystems :many
+SELECT id, "systemName", "localGovernmentId", "createdAt", "updatedAt", 
+       "mailAddress", telephone, remark
+FROM public.system
+WHERE 
+  (CASE WHEN $1::text != '' THEN "systemName" ILIKE '%' || $1 || '%' ELSE TRUE END)
+  AND (CASE WHEN $2::text != '' THEN "mailAddress" = $2 ELSE TRUE END)
+  AND (CASE WHEN $3::text != '' THEN "localGovernmentId" = $3 ELSE TRUE END)
+ORDER BY "createdAt" DESC; 

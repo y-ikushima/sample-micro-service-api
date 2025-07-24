@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/google/uuid"
 	"github.com/oapi-codegen/runtime/types"
@@ -15,6 +16,8 @@ import (
 // ServiceInterface はSystemsServiceのインターフェース
 type ServiceInterface interface {
 	GetSystems(ctx context.Context) ([]appservice.ModelSystem, error)
+	SearchSystems(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error)
+	SearchSystemsDynamic(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error) // 新しいメソッド追加
 	GetSystemById(ctx context.Context, id string) (*appservice.ModelSystem, error)
 	CreateSystem(ctx context.Context, req appservice.CreateSystemJSONBody) (*appservice.ModelSystem, error)
 	UpdateSystem(ctx context.Context, id string, req appservice.UpdateSystemJSONBody) (*appservice.ModelSystem, error)
@@ -38,6 +41,106 @@ func (s *Service) GetSystems(ctx context.Context) ([]appservice.ModelSystem, err
 	systems, err := s.dbClient.Queries.GetSystems(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve systems: %w", err)
+	}
+
+	// DBモデルをResponseモデルに変換
+	var response []appservice.ModelSystem
+	for _, system := range systems {
+		response = append(response, s.convertToModelSystem(system))
+	}
+
+	return response, nil
+}
+
+// SearchSystems - システム検索
+func (s *Service) SearchSystems(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error) {
+	params := database.SearchSystemsParams{
+		Column1: systemName,      // systemName
+		Column2: email,           // email
+		Column3: localGovernmentId, // localGovernmentId
+	}
+	
+	systems, err := s.dbClient.Queries.SearchSystems(ctx, params)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search systems: %w", err)
+	}
+
+	// DBモデルをResponseモデルに変換
+	var response []appservice.ModelSystem
+	for _, system := range systems {
+		response = append(response, s.convertToModelSystem(system))
+	}
+
+	return response, nil
+}
+
+// SearchSystemsDynamic - システム検索（動的SQL構築版サンプル）
+func (s *Service) SearchSystemsDynamic(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error) {
+	baseQuery := `
+		SELECT id, "systemName", "localGovernmentId", "createdAt", "updatedAt", 
+		       "mailAddress", telephone, remark
+		FROM public.system
+	`
+	
+	var conditions []string
+	var args []interface{}
+	argIndex := 1
+	
+	// IF的な条件分岐でクエリ構築
+	if systemName != "" {
+		conditions = append(conditions, fmt.Sprintf(`"systemName" ILIKE $%d`, argIndex))
+		args = append(args, "%"+systemName+"%")
+		argIndex++
+	}
+	
+	if email != "" {
+		conditions = append(conditions, fmt.Sprintf(`"mailAddress" = $%d`, argIndex))
+		args = append(args, email)
+		argIndex++
+	}
+	
+	if localGovernmentId != "" {
+		conditions = append(conditions, fmt.Sprintf(`"localGovernmentId" = $%d`, argIndex))
+		args = append(args, localGovernmentId)
+		argIndex++
+	}
+	
+	// WHERE句の構築
+	if len(conditions) > 0 {
+		baseQuery += " WHERE " + strings.Join(conditions, " AND ")
+	}
+	
+	baseQuery += ` ORDER BY "createdAt" DESC`
+	
+	// 実行
+	rows, err := s.dbClient.DB.QueryContext(ctx, baseQuery, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to search systems: %w", err)
+	}
+	defer rows.Close()
+	
+	// 結果の処理
+	var systems []database.System
+	for rows.Next() {
+		var system database.System
+		err := rows.Scan(
+			&system.ID,
+			&system.SystemName,
+			&system.LocalGovernmentId,
+			&system.CreatedAt,
+			&system.UpdatedAt,
+			&system.MailAddress,
+			&system.Telephone,
+			&system.Remark,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+		systems = append(systems, system)
+	}
+	
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("row iteration error: %w", err)
 	}
 
 	// DBモデルをResponseモデルに変換

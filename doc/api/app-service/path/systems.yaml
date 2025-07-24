@@ -1,7 +1,30 @@
 get:
   summary: Get all systems
-  description: Retrieve a list of all systems
+  description: Retrieve a list of all systems with optional search filters
   operationId: GetSystems
+  parameters:
+    - name: systemName
+      in: query
+      description: Filter by system name (partial match)
+      required: false
+      schema:
+        type: string
+        example: "住民基本台帳"
+    - name: email
+      in: query
+      description: Filter by email address (exact match)
+      required: false
+      schema:
+        type: string
+        format: email
+        example: "admin@example.com"
+    - name: localGovernmentId
+      in: query
+      description: Filter by local government ID (exact match)
+      required: false
+      schema:
+        type: string
+        example: "13101"
   responses:
     "200":
       description: Success
