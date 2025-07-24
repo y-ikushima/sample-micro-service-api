@@ -7,17 +7,17 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
-	"sample-micro-service-api/apps/backend/app-service/internal/handler"
+	systemsHandler "sample-micro-service-api/apps/backend/app-service/internal/handler/systems"
 	"sample-micro-service-api/package-go/database"
 )
 
 type Server struct {
 	dbClient       *database.Client
 	router         *gin.Engine
-	systemsHandler *handler.SystemsHandler
+	systemsHandler *systemsHandler.Handler
 }
 
-func NewServer(dbClient *database.Client) *Server {
+func NewServer(dbClient *database.Client, systemsHandler *systemsHandler.Handler) *Server {
 	// Set Gin mode from environment
 	ginMode := os.Getenv("GIN_MODE")
 	if ginMode == "" {
@@ -28,7 +28,7 @@ func NewServer(dbClient *database.Client) *Server {
 	server := &Server{
 		dbClient:       dbClient,
 		router:         gin.New(),
-		systemsHandler: handler.NewSystemsHandler(dbClient),
+		systemsHandler: systemsHandler,
 	}
 
 	server.setupMiddleware()

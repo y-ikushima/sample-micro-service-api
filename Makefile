@@ -1,4 +1,4 @@
-.PHONY: up down logs shell migrate-up migrate-down migrate-reset seed-db
+.PHONY: up down logs shell migrate-up migrate-down migrate-reset seed-db wire-gen
 
 # Docker Compose コマンド
 up:
@@ -12,6 +12,10 @@ down:
 
 logs:
 	docker compose logs -f
+
+# Wire関連コマンド
+wire-gen:
+	docker compose exec app-service sh -c "cd /apps/backend/app-service && wire gen ./internal/wire"
 
 # マイグレーション関連コマンド（コンテナ内で実行）
 migrate-up:
@@ -44,6 +48,7 @@ help:
 	@echo "  make up          - docker compose upでサービス起動"
 	@echo "  make down        - サービス停止"
 	@echo "  make logs        - ログ表示"
+	@echo "  make wire-gen    - Wire依存性注入コード生成"
 	@echo "  make migrate-up  - マイグレーション実行"
 	@echo "  make migrate-down - マイグレーション巻き戻し"
 	@echo "  make migrate-reset - マイグレーションリセット"

@@ -6,8 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"sample-micro-service-api/apps/backend/app-service/internal"
-	"sample-micro-service-api/package-go/database"
+	"sample-micro-service-api/apps/backend/app-service/internal/wire"
 )
 
 func main() {
@@ -16,22 +15,15 @@ func main() {
 		log.Printf("Warning: .env file not found: %v", err)
 	}
 
-	// Initialize database client
-	dbClient, err := database.NewClient()
+	// Initialize app using Wire
+	server, cleanup, err := wire.InitializeApp()
 	if err != nil {
-		log.Fatalf("Failed to initialize database client: %v", err)
+		log.Fatalf("Failed to initialize app: %v", err)
 	}
-	defer dbClient.Close()
+	defer cleanup()
 
-	// Test database connection
-	if !dbClient.IsConnected() {
-		log.Fatal("Database connection failed")
-	}
 	log.Println("✅ Database connection successful")
 
-	// Initialize and start API server
-	server := internal.NewServer(dbClient)
-	
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
