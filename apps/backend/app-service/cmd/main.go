@@ -6,7 +6,7 @@ import (
 
 	"github.com/joho/godotenv"
 
-	"sample-micro-service-api/apps/backend/app-service/internal/api"
+	"sample-micro-service-api/apps/backend/app-service/internal"
 	"sample-micro-service-api/package-go/database"
 )
 
@@ -30,7 +30,7 @@ func main() {
 	log.Println("✅ Database connection successful")
 
 	// Initialize and start API server
-	server := api.NewServer(dbClient)
+	server := internal.NewServer(dbClient)
 	
 	port := os.Getenv("PORT")
 	if port == "" {

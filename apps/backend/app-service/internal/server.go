@@ -1,18 +1,20 @@
-package api
+package internal
 
 import (
 	"net/http"
 	"os"
-	"strings"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 
+	"sample-micro-service-api/apps/backend/app-service/internal/handler"
 	"sample-micro-service-api/package-go/database"
 )
 
 type Server struct {
-	dbClient *database.Client
-	router   *gin.Engine
+	dbClient       *database.Client
+	router         *gin.Engine
+	systemsHandler *handler.SystemsHandler
 }
 
 func NewServer(dbClient *database.Client) *Server {
@@ -24,8 +26,9 @@ func NewServer(dbClient *database.Client) *Server {
 	gin.SetMode(ginMode)
 
 	server := &Server{
-		dbClient: dbClient,
-		router:   gin.New(),
+		dbClient:       dbClient,
+		router:         gin.New(),
+		systemsHandler: handler.NewSystemsHandler(dbClient),
 	}
 
 	server.setupMiddleware()
@@ -42,35 +45,27 @@ func (s *Server) setupMiddleware() {
 	s.router.Use(gin.Recovery())
 
 	// CORS middleware
-	s.router.Use(func(c *gin.Context) {
-		origin := c.Request.Header.Get("Origin")
-		allowedOrigins := os.Getenv("CORS_ALLOW_ORIGINS")
-		if allowedOrigins == "" {
-			allowedOrigins = "*"
-		}
-
-		// Check if origin is allowed
-		if allowedOrigins == "*" || strings.Contains(allowedOrigins, origin) {
-			c.Header("Access-Control-Allow-Origin", origin)
-		}
-
-		c.Header("Access-Control-Allow-Methods", os.Getenv("CORS_ALLOW_METHODS"))
-		c.Header("Access-Control-Allow-Headers", os.Getenv("CORS_ALLOW_HEADERS"))
-		c.Header("Access-Control-Max-Age", "86400")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
-		}
-
-		c.Next()
-	})
+	s.router.Use(cors.New(cors.Config{
+		AllowOrigins: []string{"*"},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Content-Type", "Authorization"},
+	}))
 }
 
 func (s *Server) setupRoutes() {
 	// Health check endpoint
 	s.router.GET("/health", s.healthCheck)
 
+	// API v1 routes
+	v1 := s.router.Group("/api/v1")
+	{
+		// Systems endpoints
+		v1.GET("/systems", s.systemsHandler.GetSystems)
+		v1.POST("/systems", s.systemsHandler.CreateSystem)
+		v1.GET("/systems/:id", s.systemsHandler.GetSystemById)
+		v1.PUT("/systems/:id", s.systemsHandler.UpdateSystem)
+		v1.DELETE("/systems/:id", s.systemsHandler.DeleteSystem)
+	}
 }
 
 func (s *Server) Start(addr string) error {
