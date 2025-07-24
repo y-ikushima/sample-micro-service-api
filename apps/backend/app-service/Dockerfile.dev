@@ -1,0 +1,27 @@
+# Dockerfile.dev
+FROM golang:1.24-alpine
+
+# 必要なツールをインストール
+RUN apk add --no-cache git curl
+
+# Airをインストール（ホットリロード用）
+RUN go install github.com/air-verse/air@latest
+
+# 作業ディレクトリを設定
+WORKDIR /app
+
+# 既存のAir設定ファイルをコピー
+COPY apps/backend/app-service/.air.toml .air.toml
+
+# ポート3003を開放
+EXPOSE 3003
+
+# 起動スクリプトを作成
+RUN echo '#!/bin/sh' > /start.sh && \
+    echo 'echo "Starting app-service..."' >> /start.sh && \
+    echo 'cd /app && go mod download' >> /start.sh && \
+    echo 'air -c .air.toml' >> /start.sh && \
+    chmod +x /start.sh
+
+# 起動スクリプトを実行
+CMD ["/start.sh"]

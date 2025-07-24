@@ -1,0 +1,46 @@
+networks:
+  sample-micro-service-network:
+    driver: bridge
+
+services:
+  postgres:
+    networks:
+      - sample-micro-service-network
+    container_name: postgres
+    image: postgres:16.1
+    restart: always
+    env_file:
+      - .env.local
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./package-go/database/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sample_micro_service"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app-service:
+    networks:
+      - sample-micro-service-network
+    container_name: app-service
+    build:
+      context: .
+      dockerfile: ./apps/backend/app-service/Dockerfile.dev
+    env_file:
+      - .env.local
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./apps/backend/app-service:/app
+      - ./package-go:/package-go
+      - go_mod_cache:/go/pkg/mod
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  go_mod_cache:
