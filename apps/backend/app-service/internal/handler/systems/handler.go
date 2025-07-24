@@ -39,6 +39,7 @@ func (h *Handler) GetSystems(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, appservice.CommonError{
 			Status: http.StatusInternalServerError,
+			Title:  "Internal Server Error",
 			Detail: stringPtr("Failed to retrieve systems"),
 		})
 		return
@@ -55,6 +56,7 @@ func (h *Handler) GetSystemById(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, appservice.CommonError{
 			Status: http.StatusNotFound,
+			Title:  "Not Found",
 			Detail: stringPtr("System not found"),
 		})
 		return
@@ -69,6 +71,7 @@ func (h *Handler) CreateSystem(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, appservice.CommonError{
 			Status: http.StatusBadRequest,
+			Title:  "Bad Request",
 			Detail: stringPtr("Invalid request body"),
 		})
 		return
@@ -78,6 +81,7 @@ func (h *Handler) CreateSystem(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, appservice.CommonError{
 			Status: http.StatusInternalServerError,
+			Title:  "Internal Server Error",
 			Detail: stringPtr("Failed to create system"),
 		})
 		return
@@ -94,6 +98,7 @@ func (h *Handler) UpdateSystem(c *gin.Context) {
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, appservice.CommonError{
 			Status: http.StatusBadRequest,
+			Title:  "Bad Request",
 			Detail: stringPtr("Invalid request body"),
 		})
 		return
@@ -103,6 +108,7 @@ func (h *Handler) UpdateSystem(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, appservice.CommonError{
 			Status: http.StatusNotFound,
+			Title:  "Not Found",
 			Detail: stringPtr("System not found or failed to update"),
 		})
 		return
@@ -119,6 +125,7 @@ func (h *Handler) DeleteSystem(c *gin.Context) {
 	if err != nil {
 		c.JSON(http.StatusNotFound, appservice.CommonError{
 			Status: http.StatusNotFound,
+			Title:  "Not Found",
 			Detail: stringPtr("System not found"),
 		})
 		return
