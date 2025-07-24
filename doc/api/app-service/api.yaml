@@ -1,0 +1,35 @@
+openapi: "3.0.3"
+
+info:
+  title: Sample Micro Service API
+  description: Sample Micro Serviceが提供するAPIサーバ
+  contact:
+    name: API support
+    url: http://www.example.com/support
+    email: support@example.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: "1.0"
+
+servers:
+  - url: http://localhost:3003/api
+    description: Local Development server
+
+paths:
+  /health:
+    $ref: ./path/health.yaml
+  /api/v1/systems:
+    $ref: ./path/systems.yaml
+  /api/v1/systems/{id}:
+    $ref: ./path/systems-by-id.yaml
+
+### 返却するコンポーネント（モデルになる）
+components:
+  schemas:
+    common.Error:
+      $ref: ./components/error.yaml
+    model.HealthCheck:
+      $ref: ./components/health.yaml
+    model.System:
+      $ref: ./components/systems.yaml

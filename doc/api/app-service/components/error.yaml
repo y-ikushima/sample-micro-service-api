@@ -1,0 +1,37 @@
+type: object
+properties:
+  type:
+    type: string
+    format: uri
+    description: "問題の種類を表すURI"
+  title:
+    type: string
+    description: "エラーの短いタイトル"
+  status:
+    type: integer
+    format: int32
+    description: "HTTPステータスコード"
+  detail:
+    type: string
+    description: "エラーの詳細説明"
+  instance:
+    type: string
+    description: "問題の一意識別子 (URIなど)"
+  traceId:
+    type: string
+    description: "リクエストトレース用ID"
+  errors:
+    type: array
+    description: "フィールドごとの詳細エラーリスト（Validationとか）"
+    items:
+      type: object
+      properties:
+        field:
+          type: string
+          description: "エラーが発生したフィールド名"
+        message:
+          type: string
+          description: "フィールドに関連するエラーメッセージ"
+required:
+  - title
+  - status

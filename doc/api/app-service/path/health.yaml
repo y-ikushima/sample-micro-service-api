@@ -1,0 +1,17 @@
+get:
+  summary: Show the status of the server.
+  description: Get the status of the server.
+  operationId: HealthCheck
+  responses:
+    "200":
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: ../components/health.yaml
+    "500":
+      description: Server error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml

@@ -1,0 +1,39 @@
+type: object
+properties:
+  id:
+    type: string
+    format: uuid
+    description: The ID of the system
+  systemName:
+    type: string
+    description: The name of the system
+  localGovernmentId:
+    type: string
+    nullable: true
+    description: The local government ID associated with the system
+  createdAt:
+    type: string
+    format: date-time
+    description: The timestamp when the system was created
+  updatedAt:
+    type: string
+    format: date-time
+    description: The timestamp when the system was last updated
+  mailAddress:
+    type: string
+    format: email
+    description: The email address associated with the system
+  telephone:
+    type: string
+    nullable: true
+    description: The telephone number associated with the system
+  remark:
+    type: string
+    nullable: true
+    description: Additional remarks or notes about the system
+required:
+  - id
+  - systemName
+  - createdAt
+  - updatedAt
+  - mailAddress

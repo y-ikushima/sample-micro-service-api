@@ -1,0 +1,85 @@
+parameters:
+  - name: id
+    in: path
+    required: true
+    description: System ID
+    schema:
+      type: string
+      format: uuid
+get:
+  summary: Get a system by ID
+  description: Retrieve a specific system by its ID
+  operationId: GetSystemById
+  responses:
+    "200":
+      description: Success
+      content:
+        application/json:
+          schema:
+            $ref: ../components/systems.yaml
+    "404":
+      description: System not found
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml
+    "500":
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml
+put:
+  summary: Update a system
+  description: Update an existing system
+  operationId: UpdateSystem
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/systems.yaml
+  responses:
+    "200":
+      description: Updated
+      content:
+        application/json:
+          schema:
+            $ref: ../components/systems.yaml
+    "400":
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml
+    "404":
+      description: System not found
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml
+    "500":
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml
+delete:
+  summary: Delete a system
+  description: Delete an existing system
+  operationId: DeleteSystem
+  responses:
+    "204":
+      description: No Content
+    "404":
+      description: System not found
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml
+    "500":
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml

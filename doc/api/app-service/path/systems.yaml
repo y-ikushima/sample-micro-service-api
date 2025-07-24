@@ -1,0 +1,48 @@
+get:
+  summary: Get all systems
+  description: Retrieve a list of all systems
+  operationId: GetSystems
+  responses:
+    "200":
+      description: Success
+      content:
+        application/json:
+          schema:
+            type: array
+            items:
+              $ref: ../components/systems.yaml
+    "500":
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml
+post:
+  summary: Create a new system
+  description: Create a new system
+  operationId: CreateSystem
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: ../components/systems.yaml
+  responses:
+    "201":
+      description: Created
+      content:
+        application/json:
+          schema:
+            $ref: ../components/systems.yaml
+    "400":
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml
+    "500":
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: ../components/error.yaml

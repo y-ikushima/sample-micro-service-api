@@ -1,0 +1,9 @@
+package: appservice
+generate:
+  models: true
+  embedded-spec: false
+  gin-server: false
+  strict-server: false
+output-options:
+  skip-prune: true
+output: ./models.gen.go
