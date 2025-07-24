@@ -40,6 +40,47 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3003/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  app-web:
+    networks:
+      - sample-micro-service-network
+    container_name: app-web
+    build:
+      context: .
+      dockerfile: ./apps/frontend/app-web/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./.local/gcloud:/root/.config/gcloud # save application default credentials
+    env_file:
+      - .env.local
+    develop:
+      watch:
+        - action: sync
+          path: ./apps/frontend/app-web/src
+          target: /workspace/apps/frontend/app-web/src
+        - action: sync
+          path: ./apps/frontend/app-web/next.config.ts
+          target: /workspace/apps/frontend/app-web/next.config.ts
+        - action: sync
+          path: ./package-ts
+          target: /workspace/package-ts
+        - action: sync
+          path: ./doc/api
+          target: /workspace/doc/api
+        - action: rebuild
+          path: ./apps/frontend/app-web/package.json
+        - action: rebuild
+          path: ./package-ts/package.json
+    restart: always
+    depends_on:
+      app-service:
+        condition: service_healthy
 
 volumes:
   postgres_data:

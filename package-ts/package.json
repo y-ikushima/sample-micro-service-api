@@ -1,0 +1,26 @@
+{
+  "name": "package-ts",
+  "version": "0.1.0",
+  "description": "TypeScript shared packages",
+  "main": "index.ts",
+  "types": "index.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist",
+    "generate": "npm run generate:zod",
+    "generate:zod": "openapi-zod-client ../doc/api/app-service/api.yaml -o ./response/generated/index.ts --export-schemas"
+  },
+  "dependencies": {
+    "@zodios/core": "^10.9.6",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "openapi-zod-client": "^1.17.5"
+  },
+  "exports": {
+    ".": "./index.ts",
+    "./response": "./response/index.ts"
+  }
+}

@@ -52,3 +52,7 @@ dump.sql
 # Git specific
 .git/
 postgres/*
+
+
+node_modules/
+node_modules
