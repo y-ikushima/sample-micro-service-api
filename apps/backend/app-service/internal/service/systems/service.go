@@ -8,8 +8,10 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/oapi-codegen/runtime/types"
+	"go.uber.org/zap"
 
 	"sample-micro-service-api/package-go/database"
+	"sample-micro-service-api/package-go/logging"
 	appservice "sample-micro-service-api/package-go/response/app-service"
 )
 
@@ -38,8 +40,11 @@ func NewService(dbClient *database.Client) ServiceInterface {
 
 // GetSystems - システム一覧取得
 func (s *Service) GetSystems(ctx context.Context) ([]appservice.ModelSystem, error) {
+	logging.Debug("Service: Getting all systems")
+	
 	systems, err := s.dbClient.Queries.GetSystems(ctx)
 	if err != nil {
+		logging.Error("Service: Failed to retrieve systems from database", zap.Error(err))
 		return nil, fmt.Errorf("failed to retrieve systems: %w", err)
 	}
 
@@ -49,11 +54,18 @@ func (s *Service) GetSystems(ctx context.Context) ([]appservice.ModelSystem, err
 		response = append(response, s.convertToModelSystem(system))
 	}
 
+	logging.Debug("Service: Successfully retrieved systems", zap.Int("count", len(response)))
 	return response, nil
 }
 
 // SearchSystems - システム検索
 func (s *Service) SearchSystems(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error) {
+	logging.Debug("Service: Searching systems",
+		zap.String("systemName", systemName),
+		zap.String("email", email),
+		zap.String("localGovernmentId", localGovernmentId),
+	)
+	
 	params := database.SearchSystemsParams{
 		Column1: systemName,      // systemName
 		Column2: email,           // email
@@ -62,6 +74,12 @@ func (s *Service) SearchSystems(ctx context.Context, systemName, email, localGov
 	
 	systems, err := s.dbClient.Queries.SearchSystems(ctx, params)
 	if err != nil {
+		logging.Error("Service: Failed to search systems", 
+			zap.Error(err),
+			zap.String("systemName", systemName),
+			zap.String("email", email),
+			zap.String("localGovernmentId", localGovernmentId),
+		)
 		return nil, fmt.Errorf("failed to search systems: %w", err)
 	}
 
@@ -71,6 +89,7 @@ func (s *Service) SearchSystems(ctx context.Context, systemName, email, localGov
 		response = append(response, s.convertToModelSystem(system))
 	}
 
+	logging.Debug("Service: Successfully searched systems", zap.Int("count", len(response)))
 	return response, nil
 }
 
@@ -154,22 +173,29 @@ func (s *Service) SearchSystemsDynamic(ctx context.Context, systemName, email, l
 
 // GetSystemById - システム詳細取得
 func (s *Service) GetSystemById(ctx context.Context, id string) (*appservice.ModelSystem, error) {
+	logging.Debug("Service: Getting system by ID", zap.String("id", id))
+	
 	systemId, err := uuid.Parse(id)
 	if err != nil {
+		logging.Warn("Service: Invalid system ID format", zap.String("id", id), zap.Error(err))
 		return nil, fmt.Errorf("invalid system ID format: %w", err)
 	}
 
 	system, err := s.dbClient.Queries.GetSystem(ctx, systemId)
 	if err != nil {
+		logging.Warn("Service: System not found in database", zap.String("id", id), zap.Error(err))
 		return nil, fmt.Errorf("system not found: %w", err)
 	}
 
 	response := s.convertToModelSystem(system)
+	logging.Debug("Service: Successfully retrieved system", zap.String("id", id))
 	return &response, nil
 }
 
 // CreateSystem - システム作成
 func (s *Service) CreateSystem(ctx context.Context, req appservice.CreateSystemJSONBody) (*appservice.ModelSystem, error) {
+	logging.Info("Service: Creating new system", zap.String("systemName", req.SystemName))
+	
 	// DB用のパラメータを準備
 	params := database.CreateSystemParams{
 		SystemName:        req.SystemName,
@@ -181,17 +207,31 @@ func (s *Service) CreateSystem(ctx context.Context, req appservice.CreateSystemJ
 
 	system, err := s.dbClient.Queries.CreateSystem(ctx, params)
 	if err != nil {
+		logging.Error("Service: Failed to create system", 
+			zap.Error(err),
+			zap.String("systemName", req.SystemName),
+		)
 		return nil, fmt.Errorf("failed to create system: %w", err)
 	}
 
 	response := s.convertToModelSystem(system)
+	logging.Info("Service: Successfully created system", 
+		zap.String("id", system.ID.String()),
+		zap.String("systemName", req.SystemName),
+	)
 	return &response, nil
 }
 
 // UpdateSystem - システム更新
 func (s *Service) UpdateSystem(ctx context.Context, id string, req appservice.UpdateSystemJSONBody) (*appservice.ModelSystem, error) {
+	logging.Info("Service: Updating system", 
+		zap.String("id", id),
+		zap.String("systemName", req.SystemName),
+	)
+	
 	systemId, err := uuid.Parse(id)
 	if err != nil {
+		logging.Warn("Service: Invalid system ID format for update", zap.String("id", id), zap.Error(err))
 		return nil, fmt.Errorf("invalid system ID format: %w", err)
 	}
 
@@ -207,25 +247,38 @@ func (s *Service) UpdateSystem(ctx context.Context, id string, req appservice.Up
 
 	system, err := s.dbClient.Queries.UpdateSystem(ctx, params)
 	if err != nil {
+		logging.Error("Service: Failed to update system", 
+			zap.String("id", id),
+			zap.Error(err),
+		)
 		return nil, fmt.Errorf("system not found or failed to update: %w", err)
 	}
 
 	response := s.convertToModelSystem(system)
+	logging.Info("Service: Successfully updated system", zap.String("id", id))
 	return &response, nil
 }
 
 // DeleteSystem - システム削除
 func (s *Service) DeleteSystem(ctx context.Context, id string) error {
+	logging.Info("Service: Deleting system", zap.String("id", id))
+	
 	systemId, err := uuid.Parse(id)
 	if err != nil {
+		logging.Warn("Service: Invalid system ID format for deletion", zap.String("id", id), zap.Error(err))
 		return fmt.Errorf("invalid system ID format: %w", err)
 	}
 
 	err = s.dbClient.Queries.DeleteSystem(ctx, systemId)
 	if err != nil {
+		logging.Error("Service: Failed to delete system", 
+			zap.String("id", id),
+			zap.Error(err),
+		)
 		return fmt.Errorf("system not found: %w", err)
 	}
 
+	logging.Info("Service: Successfully deleted system", zap.String("id", id))
 	return nil
 }
 
