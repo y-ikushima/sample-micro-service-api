@@ -1,22 +1,19 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"os"
 
 	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
-
-	"sample-micro-service-api/package-go/database/internal/db"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 type Client struct {
-	DB      *sql.DB
-	Queries *db.Queries
+	GormDB *gorm.DB
 }
 
-// NewClient creates a new database client
+// NewClient creates a new GORM database client
 func NewClient() (*Client, error) {
 	// Load environment variables
 	if err := godotenv.Load(); err != nil {
@@ -28,29 +25,52 @@ func NewClient() (*Client, error) {
 		return nil, fmt.Errorf("POSTGRES_URL environment variable is required")
 	}
 
-	database, err := sql.Open("postgres", databaseURL)
+	// GORM database connection
+	gormDB, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
 	if err != nil {
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-
-	// Test connection
-	if err := database.Ping(); err != nil {
-		database.Close()
-		return nil, fmt.Errorf("failed to ping database: %w", err)
+		return nil, fmt.Errorf("failed to connect to database with GORM: %w", err)
 	}
 
 	return &Client{
-		DB:      database,
-		Queries: db.New(database),
+		GormDB: gormDB,
 	}, nil
+}
+
+// NewGormClient creates a new GORM-only database client
+func NewGormClient() (*gorm.DB, error) {
+	// Load environment variables
+	if err := godotenv.Load(); err != nil {
+		// .envファイルが見つからない場合は警告のみ
+	}
+
+	databaseURL := os.Getenv("POSTGRES_URL")
+	if databaseURL == "" {
+		return nil, fmt.Errorf("POSTGRES_URL environment variable is required")
+	}
+
+	// GORM database connection
+	gormDB, err := gorm.Open(postgres.Open(databaseURL), &gorm.Config{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to database with GORM: %w", err)
+	}
+
+	return gormDB, nil
 }
 
 // Close closes the database connection
 func (c *Client) Close() error {
-	return c.DB.Close()
+	sqlDB, err := c.GormDB.DB()
+	if err != nil {
+		return err
+	}
+	return sqlDB.Close()
 }
 
 // IsConnected checks if the database connection is alive
 func (c *Client) IsConnected() bool {
-	return c.DB.Ping() == nil
+	sqlDB, err := c.GormDB.DB()
+	if err != nil {
+		return false
+	}
+	return sqlDB.Ping() == nil
 } 

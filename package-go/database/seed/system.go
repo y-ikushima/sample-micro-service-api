@@ -1,84 +1,81 @@
 package seed
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
 
-	"sample-micro-service-api/package-go/database/internal/db"
+	"sample-micro-service-api/package-go/database/model"
+
+	"gorm.io/gorm"
 )
 
-// SeedSystems inserts test data for systems table
-func SeedSystems(database *sql.DB) error {
-	queries := db.New(database)
-	ctx := context.Background()
-
-	systems := []db.CreateSystemParams{
+// SeedSystems inserts test data for systems table using GORM
+func SeedSystems(db *gorm.DB) error {
+	systems := []model.System{
 		{
 			SystemName:        "住民基本台帳システム",
-			LocalGovernmentId: sql.NullString{String: "", Valid: false}, // null
+			LocalGovernmentID: "",
 			MailAddress:       "juki-admin@chiyoda.tokyo.jp",
-			Telephone:         sql.NullString{String: "03-1234-5678", Valid: true},
-			Remark:           sql.NullString{String: "住民基本台帳の管理を行うシステム", Valid: true},
+			Telephone:         "03-1234-5678",
+			Remark:            "住民基本台帳の管理を行うシステム",
 		},
 		{
 			SystemName:        "税務管理システム",
-			LocalGovernmentId: sql.NullString{String: "", Valid: false}, // null
+			LocalGovernmentID: "",
 			MailAddress:       "zeimu-admin@chiyoda.tokyo.jp",
-			Telephone:         sql.NullString{String: "03-1234-5679", Valid: true},
-			Remark:           sql.NullString{String: "税務関連業務の管理システム", Valid: true},
+			Telephone:         "03-1234-5679",
+			Remark:            "税務関連業務の管理システム",
 		},
 		{
 			SystemName:        "健康管理システム",
-			LocalGovernmentId: sql.NullString{String: "", Valid: false}, // null
+			LocalGovernmentID: "",
 			MailAddress:       "kenkou-admin@yokohama.lg.jp",
-			Telephone:         sql.NullString{String: "045-1234-5678", Valid: true},
-			Remark:           sql.NullString{String: "市民の健康管理を支援するシステム", Valid: true},
+			Telephone:         "045-1234-5678",
+			Remark:            "市民の健康管理を支援するシステム",
 		},
 		{
 			SystemName:        "介護保険システム",
-			LocalGovernmentId: sql.NullString{String: "", Valid: false}, // null
+			LocalGovernmentID: "",
 			MailAddress:       "kaigo-admin@yokohama.lg.jp",
-			Telephone:         sql.NullString{String: "045-1234-5679", Valid: true},
-			Remark:           sql.NullString{String: "介護保険業務の管理システム", Valid: true},
+			Telephone:         "045-1234-5679",
+			Remark:            "介護保険業務の管理システム",
 		},
 		{
 			SystemName:        "教育情報システム",
-			LocalGovernmentId: sql.NullString{String: "", Valid: false}, // null
+			LocalGovernmentID: "",
 			MailAddress:       "kyoiku-admin@nagoya.lg.jp",
-			Telephone:         sql.NullString{String: "052-1234-5678", Valid: true},
-			Remark:           sql.NullString{String: "教育関連情報の管理システム", Valid: true},
+			Telephone:         "052-1234-5678",
+			Remark:            "教育関連情報の管理システム",
 		},
 		{
 			SystemName:        "共通基盤システム",
-			LocalGovernmentId: sql.NullString{String: "", Valid: false}, // null
+			LocalGovernmentID: "",
 			MailAddress:       "platform-admin@gov-cloud.go.jp",
-			Telephone:         sql.NullString{String: "03-0000-0000", Valid: true},
-			Remark:           sql.NullString{String: "自治体共通で使用する基盤システム", Valid: true},
+			Telephone:         "03-0000-0000",
+			Remark:            "自治体共通で使用する基盤システム",
 		},
 		{
 			SystemName:        "災害対応システム",
-			LocalGovernmentId: sql.NullString{String: "", Valid: false}, // null
+			LocalGovernmentID: "",
 			MailAddress:       "saigai-admin@osaka.lg.jp",
-			Telephone:         sql.NullString{String: "06-1234-5678", Valid: true},
-			Remark:           sql.NullString{String: "災害時の対応管理システム", Valid: true},
+			Telephone:         "06-1234-5678",
+			Remark:            "災害時の対応管理システム",
 		},
 		{
 			SystemName:        "図書館管理システム",
-			LocalGovernmentId: sql.NullString{String: "", Valid: false}, // null
+			LocalGovernmentID: "",
 			MailAddress:       "library-admin@chiyoda.tokyo.jp",
-			Telephone:         sql.NullString{String: "", Valid: false},
-			Remark:           sql.NullString{String: "図書館の蔵書・貸出管理システム", Valid: true},
+			Telephone:         "",  // 空文字列でNULL値を表現
+			Remark:            "図書館の蔵書・貸出管理システム",
 		},
 	}
 
 	fmt.Println("Seeding systems data...")
 	for i, systemData := range systems {
-		system, err := queries.CreateSystem(ctx, systemData)
-		if err != nil {
-			return fmt.Errorf("failed to create system %d: %w", i+1, err)
+		result := db.Create(&systemData)
+		if result.Error != nil {
+			return fmt.Errorf("failed to create system %d: %w", i+1, result.Error)
 		}
-		fmt.Printf("Created system: %s (ID: %s)\n", system.SystemName, system.ID.String())
+		fmt.Printf("Created system: %s (ID: %s)\n", systemData.SystemName, systemData.ID)
 	}
 
 	fmt.Printf("Successfully seeded %d systems\n", len(systems))

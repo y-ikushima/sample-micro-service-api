@@ -14,6 +14,8 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	gormpostgres "gorm.io/driver/postgres"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -140,8 +142,15 @@ func runMigrationsDown(database *sql.DB) error {
 func seedDatabase(database *sql.DB) error {
 	fmt.Println("Starting database seeding...")
 	
+	// Get database URL for GORM connection
+	databaseURL := os.Getenv("POSTGRES_URL")
+	gormDB, err := gorm.Open(gormpostgres.Open(databaseURL), &gorm.Config{})
+	if err != nil {
+		return fmt.Errorf("failed to create GORM connection: %w", err)
+	}
+	
 	// Seed systems data
-	if err := seed.SeedSystems(database); err != nil {
+	if err := seed.SeedSystems(gormDB); err != nil {
 		return fmt.Errorf("failed to seed systems: %w", err)
 	}
 	

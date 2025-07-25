@@ -2,15 +2,14 @@ package systems_service
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
-	"strings"
 
 	"github.com/google/uuid"
 	"github.com/oapi-codegen/runtime/types"
 	"go.uber.org/zap"
 
 	"sample-micro-service-api/package-go/database"
+	"sample-micro-service-api/package-go/database/model"
 	"sample-micro-service-api/package-go/logging"
 	appservice "sample-micro-service-api/package-go/response/app-service"
 )
@@ -19,7 +18,6 @@ import (
 type ServiceInterface interface {
 	GetSystems(ctx context.Context) ([]appservice.ModelSystem, error)
 	SearchSystems(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error)
-	SearchSystemsDynamic(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error) // 新しいメソッド追加
 	GetSystemById(ctx context.Context, id string) (*appservice.ModelSystem, error)
 	CreateSystem(ctx context.Context, req appservice.CreateSystemJSONBody) (*appservice.ModelSystem, error)
 	UpdateSystem(ctx context.Context, id string, req appservice.UpdateSystemJSONBody) (*appservice.ModelSystem, error)
@@ -40,183 +38,109 @@ func NewService(dbClient *database.Client) ServiceInterface {
 
 // GetSystems - システム一覧取得
 func (s *Service) GetSystems(ctx context.Context) ([]appservice.ModelSystem, error) {
-	logging.Debug("Service: Getting all systems")
+	logging.Debug("Service: Getting all systems using GORM")
 	
-	systems, err := s.dbClient.Queries.GetSystems(ctx)
-	if err != nil {
-		logging.Error("Service: Failed to retrieve systems from database", zap.Error(err))
-		return nil, fmt.Errorf("failed to retrieve systems: %w", err)
+	var systems []model.System
+	result := s.dbClient.GormDB.WithContext(ctx).Order("created_at DESC").Find(&systems)
+	if result.Error != nil {
+		logging.Error("Service: Failed to retrieve systems from database using GORM", zap.Error(result.Error))
+		return nil, fmt.Errorf("failed to retrieve systems: %w", result.Error)
 	}
 
-	// DBモデルをResponseモデルに変換
+	// SystemをResponseモデルに変換
 	var response []appservice.ModelSystem
 	for _, system := range systems {
 		response = append(response, s.convertToModelSystem(system))
 	}
 
-	logging.Debug("Service: Successfully retrieved systems", zap.Int("count", len(response)))
+	logging.Debug("Service: Successfully retrieved systems using GORM", zap.Int("count", len(response)))
 	return response, nil
 }
 
 // SearchSystems - システム検索
 func (s *Service) SearchSystems(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error) {
-	logging.Debug("Service: Searching systems",
+	logging.Debug("Service: Searching systems using GORM",
 		zap.String("systemName", systemName),
 		zap.String("email", email),
 		zap.String("localGovernmentId", localGovernmentId),
 	)
 	
-	params := database.SearchSystemsParams{
-		Column1: systemName,      // systemName
-		Column2: email,           // email
-		Column3: localGovernmentId, // localGovernmentId
+	var systems []model.System
+	query := s.dbClient.GormDB.WithContext(ctx)
+	
+	// 動的にWHERE条件を追加
+	if systemName != "" {
+		query = query.Where("\"systemName\" ILIKE ?", "%"+systemName+"%")
+	}
+	if email != "" {
+		query = query.Where("\"mailAddress\" = ?", email)
+	}
+	if localGovernmentId != "" {
+		query = query.Where("\"localGovernmentId\" = ?", localGovernmentId)
 	}
 	
-	systems, err := s.dbClient.Queries.SearchSystems(ctx, params)
-	if err != nil {
-		logging.Error("Service: Failed to search systems", 
-			zap.Error(err),
+	result := query.Order("\"createdAt\" DESC").Find(&systems)
+	if result.Error != nil {
+		logging.Error("Service: Failed to search systems using GORM", 
+			zap.Error(result.Error),
 			zap.String("systemName", systemName),
 			zap.String("email", email),
 			zap.String("localGovernmentId", localGovernmentId),
 		)
-		return nil, fmt.Errorf("failed to search systems: %w", err)
+		return nil, fmt.Errorf("failed to search systems: %w", result.Error)
 	}
 
-	// DBモデルをResponseモデルに変換
+	// SystemをResponseモデルに変換
 	var response []appservice.ModelSystem
 	for _, system := range systems {
 		response = append(response, s.convertToModelSystem(system))
 	}
 
-	logging.Debug("Service: Successfully searched systems", zap.Int("count", len(response)))
-	return response, nil
-}
-
-// SearchSystemsDynamic - システム検索（動的SQL構築版サンプル）
-func (s *Service) SearchSystemsDynamic(ctx context.Context, systemName, email, localGovernmentId string) ([]appservice.ModelSystem, error) {
-	baseQuery := `
-		SELECT id, "systemName", "localGovernmentId", "createdAt", "updatedAt", 
-		       "mailAddress", telephone, remark
-		FROM public.system
-	`
-	
-	var conditions []string
-	var args []interface{}
-	argIndex := 1
-	
-	// IF的な条件分岐でクエリ構築
-	if systemName != "" {
-		conditions = append(conditions, fmt.Sprintf(`"systemName" ILIKE $%d`, argIndex))
-		args = append(args, "%"+systemName+"%")
-		argIndex++
-	}
-	
-	if email != "" {
-		conditions = append(conditions, fmt.Sprintf(`"mailAddress" = $%d`, argIndex))
-		args = append(args, email)
-		argIndex++
-	}
-	
-	if localGovernmentId != "" {
-		conditions = append(conditions, fmt.Sprintf(`"localGovernmentId" = $%d`, argIndex))
-		args = append(args, localGovernmentId)
-		argIndex++
-	}
-	
-	// WHERE句の構築
-	if len(conditions) > 0 {
-		baseQuery += " WHERE " + strings.Join(conditions, " AND ")
-	}
-	
-	baseQuery += ` ORDER BY "createdAt" DESC`
-	
-	// 実行
-	rows, err := s.dbClient.DB.QueryContext(ctx, baseQuery, args...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to search systems: %w", err)
-	}
-	defer rows.Close()
-	
-	// 結果の処理
-	var systems []database.System
-	for rows.Next() {
-		var system database.System
-		err := rows.Scan(
-			&system.ID,
-			&system.SystemName,
-			&system.LocalGovernmentId,
-			&system.CreatedAt,
-			&system.UpdatedAt,
-			&system.MailAddress,
-			&system.Telephone,
-			&system.Remark,
-		)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan row: %w", err)
-		}
-		systems = append(systems, system)
-	}
-	
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("row iteration error: %w", err)
-	}
-
-	// DBモデルをResponseモデルに変換
-	var response []appservice.ModelSystem
-	for _, system := range systems {
-		response = append(response, s.convertToModelSystem(system))
-	}
-
+	logging.Debug("Service: Successfully searched systems using GORM", zap.Int("count", len(response)))
 	return response, nil
 }
 
 // GetSystemById - システム詳細取得
 func (s *Service) GetSystemById(ctx context.Context, id string) (*appservice.ModelSystem, error) {
-	logging.Debug("Service: Getting system by ID", zap.String("id", id))
+	logging.Debug("Service: Getting system by ID using GORM", zap.String("id", id))
 	
-	systemId, err := uuid.Parse(id)
-	if err != nil {
-		logging.Warn("Service: Invalid system ID format", zap.String("id", id), zap.Error(err))
-		return nil, fmt.Errorf("invalid system ID format: %w", err)
-	}
-
-	system, err := s.dbClient.Queries.GetSystem(ctx, systemId)
-	if err != nil {
-		logging.Warn("Service: System not found in database", zap.String("id", id), zap.Error(err))
-		return nil, fmt.Errorf("system not found: %w", err)
+	// UUIDパースは不要（stringとして扱う）
+	var system model.System
+	result := s.dbClient.GormDB.WithContext(ctx).First(&system, "id = ?", id)
+	if result.Error != nil {
+		logging.Warn("Service: System not found using GORM", zap.String("id", id), zap.Error(result.Error))
+		return nil, fmt.Errorf("system not found: %w", result.Error)
 	}
 
 	response := s.convertToModelSystem(system)
-	logging.Debug("Service: Successfully retrieved system", zap.String("id", id))
+	logging.Debug("Service: Successfully retrieved system using GORM", zap.String("id", id))
 	return &response, nil
 }
 
 // CreateSystem - システム作成
 func (s *Service) CreateSystem(ctx context.Context, req appservice.CreateSystemJSONBody) (*appservice.ModelSystem, error) {
-	logging.Info("Service: Creating new system", zap.String("systemName", req.SystemName))
+	logging.Info("Service: Creating new system using GORM", zap.String("systemName", req.SystemName))
 	
-	// DB用のパラメータを準備
-	params := database.CreateSystemParams{
+	system := model.System{
 		SystemName:        req.SystemName,
-		LocalGovernmentId: ptrToNullString(req.LocalGovernmentId),
+		LocalGovernmentID: stringFromPtr(req.LocalGovernmentId),
 		MailAddress:       string(req.MailAddress),
-		Telephone:         ptrToNullString(req.Telephone),
-		Remark:            ptrToNullString(req.Remark),
+		Telephone:         stringFromPtr(req.Telephone),
+		Remark:            stringFromPtr(req.Remark),
 	}
 
-	system, err := s.dbClient.Queries.CreateSystem(ctx, params)
-	if err != nil {
-		logging.Error("Service: Failed to create system", 
-			zap.Error(err),
+	result := s.dbClient.GormDB.WithContext(ctx).Create(&system)
+	if result.Error != nil {
+		logging.Error("Service: Failed to create system using GORM", 
+			zap.Error(result.Error),
 			zap.String("systemName", req.SystemName),
 		)
-		return nil, fmt.Errorf("failed to create system: %w", err)
+		return nil, fmt.Errorf("failed to create system: %w", result.Error)
 	}
 
 	response := s.convertToModelSystem(system)
-	logging.Info("Service: Successfully created system", 
-		zap.String("id", system.ID.String()),
+	logging.Info("Service: Successfully created system using GORM", 
+		zap.String("id", system.ID),
 		zap.String("systemName", req.SystemName),
 	)
 	return &response, nil
@@ -224,89 +148,89 @@ func (s *Service) CreateSystem(ctx context.Context, req appservice.CreateSystemJ
 
 // UpdateSystem - システム更新
 func (s *Service) UpdateSystem(ctx context.Context, id string, req appservice.UpdateSystemJSONBody) (*appservice.ModelSystem, error) {
-	logging.Info("Service: Updating system", 
+	logging.Info("Service: Updating system using GORM", 
 		zap.String("id", id),
 		zap.String("systemName", req.SystemName),
 	)
 	
-	systemId, err := uuid.Parse(id)
-	if err != nil {
-		logging.Warn("Service: Invalid system ID format for update", zap.String("id", id), zap.Error(err))
-		return nil, fmt.Errorf("invalid system ID format: %w", err)
+	var system model.System
+	result := s.dbClient.GormDB.WithContext(ctx).First(&system, "id = ?", id)
+	if result.Error != nil {
+		logging.Warn("Service: System not found for update using GORM", zap.String("id", id), zap.Error(result.Error))
+		return nil, fmt.Errorf("system not found: %w", result.Error)
 	}
 
-	// DB用のパラメータを準備
-	params := database.UpdateSystemParams{
-		ID:                systemId,
-		SystemName:        req.SystemName,
-		LocalGovernmentId: ptrToNullString(req.LocalGovernmentId),
-		MailAddress:       string(req.MailAddress),
-		Telephone:         ptrToNullString(req.Telephone),
-		Remark:            ptrToNullString(req.Remark),
-	}
+	// システム情報を更新
+	system.SystemName = req.SystemName
+	system.LocalGovernmentID = stringFromPtr(req.LocalGovernmentId)
+	system.MailAddress = string(req.MailAddress)
+	system.Telephone = stringFromPtr(req.Telephone)
+	system.Remark = stringFromPtr(req.Remark)
 
-	system, err := s.dbClient.Queries.UpdateSystem(ctx, params)
-	if err != nil {
-		logging.Error("Service: Failed to update system", 
+	result = s.dbClient.GormDB.WithContext(ctx).Save(&system)
+	if result.Error != nil {
+		logging.Error("Service: Failed to update system using GORM", 
 			zap.String("id", id),
-			zap.Error(err),
+			zap.Error(result.Error),
 		)
-		return nil, fmt.Errorf("system not found or failed to update: %w", err)
+		return nil, fmt.Errorf("failed to update system: %w", result.Error)
 	}
 
 	response := s.convertToModelSystem(system)
-	logging.Info("Service: Successfully updated system", zap.String("id", id))
+	logging.Info("Service: Successfully updated system using GORM", zap.String("id", id))
 	return &response, nil
 }
 
 // DeleteSystem - システム削除
 func (s *Service) DeleteSystem(ctx context.Context, id string) error {
-	logging.Info("Service: Deleting system", zap.String("id", id))
+	logging.Info("Service: Deleting system using GORM", zap.String("id", id))
 	
-	systemId, err := uuid.Parse(id)
-	if err != nil {
-		logging.Warn("Service: Invalid system ID format for deletion", zap.String("id", id), zap.Error(err))
-		return fmt.Errorf("invalid system ID format: %w", err)
-	}
-
-	err = s.dbClient.Queries.DeleteSystem(ctx, systemId)
-	if err != nil {
-		logging.Error("Service: Failed to delete system", 
+	result := s.dbClient.GormDB.WithContext(ctx).Delete(&model.System{}, "id = ?", id)
+	if result.Error != nil {
+		logging.Error("Service: Failed to delete system using GORM", 
 			zap.String("id", id),
-			zap.Error(err),
+			zap.Error(result.Error),
 		)
-		return fmt.Errorf("system not found: %w", err)
+		return fmt.Errorf("failed to delete system: %w", result.Error)
 	}
 
-	logging.Info("Service: Successfully deleted system", zap.String("id", id))
+	if result.RowsAffected == 0 {
+		logging.Warn("Service: System not found for deletion", zap.String("id", id))
+		return fmt.Errorf("system not found")
+	}
+
+	logging.Info("Service: Successfully deleted system using GORM", zap.String("id", id))
 	return nil
 }
 
-// convertToModelSystem - DBモデルをAPIレスポンスモデルに変換
-func (s *Service) convertToModelSystem(system database.System) appservice.ModelSystem {
+// convertToModelSystem - SystemをAPIレスポンスモデルに変換
+func (s *Service) convertToModelSystem(system model.System) appservice.ModelSystem {
+	// string型のIDをuuid.UUIDに変換
+	systemId, _ := uuid.Parse(system.ID)
+	
 	return appservice.ModelSystem{
-		Id:                system.ID,
+		Id:                systemId,
 		SystemName:        system.SystemName,
-		LocalGovernmentId: nullStringToPtr(system.LocalGovernmentId),
+		LocalGovernmentId: stringToPtr(system.LocalGovernmentID),
 		CreatedAt:         system.CreatedAt,
 		UpdatedAt:         system.UpdatedAt,
 		MailAddress:       types.Email(system.MailAddress),
-		Telephone:         nullStringToPtr(system.Telephone),
-		Remark:            nullStringToPtr(system.Remark),
+		Telephone:         stringToPtr(system.Telephone),
+		Remark:            stringToPtr(system.Remark),
 	}
 }
 
 // ヘルパー関数
-func nullStringToPtr(ns sql.NullString) *string {
-	if ns.Valid {
-		return &ns.String
+func stringToPtr(s string) *string {
+	if s == "" {
+		return nil
 	}
-	return nil
+	return &s
 }
 
-func ptrToNullString(s *string) sql.NullString {
-	if s != nil {
-		return sql.NullString{String: *s, Valid: true}
+func stringFromPtr(s *string) string {
+	if s == nil {
+		return ""
 	}
-	return sql.NullString{Valid: false}
+	return *s
 } 

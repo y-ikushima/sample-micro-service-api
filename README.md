@@ -268,3 +268,9 @@ lsof -i :5432
 # 使用中のプロセスを停止
 kill -9 <PID>
 ```
+
+モデル生成
+
+```
+gentool -db postgres -dsn "postgres://postgres:password@localhost:5432/sample_micro_service?sslmode=disable" -onlyModel -outPath ./database/generated
+```
