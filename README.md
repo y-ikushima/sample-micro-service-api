@@ -13,34 +13,138 @@ Sample Micro Service が提供する API サーバ
 
 ## 前提条件
 
-- Docker & Docker Compose
-- Node.js 20.x
-- Go 1.24.x
+### 必須ソフトウェア
 
-## セットアップ
+以下のソフトウェアがインストールされている必要があります：
 
-### 1. 環境設定
+- **Docker**: バージョン 24.0 以上
+- **Docker Compose**: バージョン 2.0 以上
+- **Node.js**: バージョン 20.x (LTS 推奨)
+- **Go**: バージョン 1.24.x
+- **pnpm**: パッケージマネージャー (npm install -g pnpm)
+
+### インストール確認
+
+```bash
+# バージョン確認
+docker --version
+docker-compose --version
+node --version
+go version
+pnpm --version
+```
+
+## 環境構築手順
+
+### Step 1: リポジトリのクローン
+
+```bash
+# プロジェクトをクローン
+git clone <repository-url>
+cd sample-micro-service-api
+```
+
+### Step 2: 環境変数の設定
 
 ```bash
 # 環境変数ファイルの作成
-cp ".env temp" .env.local
+cp .env.example .env.local
+
+# または手動で作成
+touch .env.local
 ```
 
-### 2. サービス起動
+環境変数ファイル（`.env.local`）に以下の設定を追加：
+
+```bash
+# データベース設定
+POSTGRES_DB=sample_db
+POSTGRES_USER=sample_user
+POSTGRES_PASSWORD=sample_password
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+
+# アプリケーション設定
+APP_ENV=development
+APP_PORT=3003
+WEB_PORT=3000
+
+# 認証設定（必要に応じて）
+JWT_SECRET=your-jwt-secret-key
+AES_KEY=your-aes-encryption-key
+```
+
+### Step 3: 依存関係のインストール
+
+```bash
+# Node.js依存関係のインストール
+pnpm install
+
+# Go依存関係のダウンロード（必要に応じて）
+cd apps/backend/app-service && go mod download
+cd ../../../
+```
+
+### Step 4: Docker 環境の準備
+
+```bash
+# Dockerイメージのビルド
+docker-compose build
+
+# または高速ビルド
+make build
+```
+
+### Step 5: データベースの初期化
+
+```bash
+# データベースとサービスの起動
+make start
+
+# データベースマイグレーション実行
+make db-migrate
+
+# 初期データの投入（オプション）
+make db-seed
+```
+
+### Step 6: サービス起動の確認
 
 ```bash
 # 全サービス起動
 make start
 
-# または
-docker-compose up -d
+# ログでサービス状態を確認
+make logs
 ```
 
-### 3. アクセス確認
+### Step 7: アクセス確認
 
-- フロントエンド: http://localhost:3000
-- バックエンド API: http://localhost:3003
-- PostgreSQL: http://localhost:5432
+各サービスが正常に起動していることを確認：
+
+- **フロントエンド**: http://localhost:3000
+- **バックエンド API**: http://localhost:3003
+- **API 健全性チェック**: http://localhost:3003/health
+- **PostgreSQL**: localhost:5432 (DB 接続ツールで確認可能)
+
+### Step 8: 開発環境の確認
+
+```bash
+# API疎通テスト
+curl http://localhost:3003/health
+
+# システム一覧API テスト
+curl http://localhost:3003/api/v1/systems
+```
+
+## 環境構築の完了確認
+
+以下が全て成功すれば環境構築完了です：
+
+- [ ] `make start` でエラーなく起動する
+- [ ] http://localhost:3000 でフロントエンドにアクセスできる
+- [ ] http://localhost:3003/health で `{"status": "ok"}` が返される
+- [ ] `make logs` でエラーログが出ていない
 
 ## 開発時の注意点
 
@@ -164,11 +268,3 @@ lsof -i :5432
 # 使用中のプロセスを停止
 kill -9 <PID>
 ```
-
-## ライセンス
-
-Apache 2.0
-
-## サポート
-
-問題が発生した場合は、まずこの README のトラブルシューティングセクションを確認してください。
