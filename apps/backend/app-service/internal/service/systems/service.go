@@ -41,14 +41,16 @@ func (s *Service) GetSystems(ctx context.Context) ([]appservice.ModelSystem, err
 	logging.Debug("Service: Getting all systems using GORM")
 	
 	var systems []model.System
-	result := s.dbClient.GormDB.WithContext(ctx).Order("created_at DESC").Find(&systems)
-	if result.Error != nil {
-		logging.Error("Service: Failed to retrieve systems from database using GORM", zap.Error(result.Error))
-		return nil, fmt.Errorf("failed to retrieve systems: %w", result.Error)
+	if err := s.dbClient.GormDB.WithContext(ctx).
+		Model(&model.System{}).
+		Order("created_at DESC").
+		Find(&systems).Error; err != nil {
+		logging.Error("Service: Failed to retrieve systems from database using GORM", zap.Error(err))
+		return nil, fmt.Errorf("failed to retrieve systems: %w", err)
 	}
 
 	// SystemをResponseモデルに変換
-	var response []appservice.ModelSystem
+	response := make([]appservice.ModelSystem, 0, len(systems))
 	for _, system := range systems {
 		response = append(response, s.convertToModelSystem(system))
 	}
@@ -66,32 +68,31 @@ func (s *Service) SearchSystems(ctx context.Context, systemName, email, localGov
 	)
 	
 	var systems []model.System
-	query := s.dbClient.GormDB.WithContext(ctx)
+	query := s.dbClient.GormDB.WithContext(ctx).Model(&model.System{})
 	
 	// 動的にWHERE条件を追加
 	if systemName != "" {
-		query = query.Where("\"systemName\" ILIKE ?", "%"+systemName+"%")
+		query = query.Where("system_name ILIKE ?", "%"+systemName+"%")
 	}
 	if email != "" {
-		query = query.Where("\"mailAddress\" = ?", email)
+		query = query.Where(&model.System{MailAddress: email})
 	}
 	if localGovernmentId != "" {
-		query = query.Where("\"localGovernmentId\" = ?", localGovernmentId)
+		query = query.Where(&model.System{LocalGovernmentID: localGovernmentId})
 	}
 	
-	result := query.Order("\"createdAt\" DESC").Find(&systems)
-	if result.Error != nil {
+	if err := query.Order("created_at DESC").Find(&systems).Error; err != nil {
 		logging.Error("Service: Failed to search systems using GORM", 
-			zap.Error(result.Error),
+			zap.Error(err),
 			zap.String("systemName", systemName),
 			zap.String("email", email),
 			zap.String("localGovernmentId", localGovernmentId),
 		)
-		return nil, fmt.Errorf("failed to search systems: %w", result.Error)
+		return nil, fmt.Errorf("failed to search systems: %w", err)
 	}
 
 	// SystemをResponseモデルに変換
-	var response []appservice.ModelSystem
+	response := make([]appservice.ModelSystem, 0, len(systems))
 	for _, system := range systems {
 		response = append(response, s.convertToModelSystem(system))
 	}
@@ -104,12 +105,13 @@ func (s *Service) SearchSystems(ctx context.Context, systemName, email, localGov
 func (s *Service) GetSystemById(ctx context.Context, id string) (*appservice.ModelSystem, error) {
 	logging.Debug("Service: Getting system by ID using GORM", zap.String("id", id))
 	
-	// UUIDパースは不要（stringとして扱う）
 	var system model.System
-	result := s.dbClient.GormDB.WithContext(ctx).First(&system, "id = ?", id)
-	if result.Error != nil {
-		logging.Warn("Service: System not found using GORM", zap.String("id", id), zap.Error(result.Error))
-		return nil, fmt.Errorf("system not found: %w", result.Error)
+	if err := s.dbClient.GormDB.WithContext(ctx).
+		Model(&model.System{}).
+		Where(&model.System{ID: id}).
+		First(&system).Error; err != nil {
+		logging.Warn("Service: System not found using GORM", zap.String("id", id), zap.Error(err))
+		return nil, fmt.Errorf("system not found: %w", err)
 	}
 
 	response := s.convertToModelSystem(system)
@@ -129,13 +131,12 @@ func (s *Service) CreateSystem(ctx context.Context, req appservice.CreateSystemJ
 		Remark:            stringFromPtr(req.Remark),
 	}
 
-	result := s.dbClient.GormDB.WithContext(ctx).Create(&system)
-	if result.Error != nil {
+	if err := s.dbClient.GormDB.WithContext(ctx).Create(&system).Error; err != nil {
 		logging.Error("Service: Failed to create system using GORM", 
-			zap.Error(result.Error),
+			zap.Error(err),
 			zap.String("systemName", req.SystemName),
 		)
-		return nil, fmt.Errorf("failed to create system: %w", result.Error)
+		return nil, fmt.Errorf("failed to create system: %w", err)
 	}
 
 	response := s.convertToModelSystem(system)
@@ -154,26 +155,40 @@ func (s *Service) UpdateSystem(ctx context.Context, id string, req appservice.Up
 	)
 	
 	var system model.System
-	result := s.dbClient.GormDB.WithContext(ctx).First(&system, "id = ?", id)
-	if result.Error != nil {
-		logging.Warn("Service: System not found for update using GORM", zap.String("id", id), zap.Error(result.Error))
-		return nil, fmt.Errorf("system not found: %w", result.Error)
+	if err := s.dbClient.GormDB.WithContext(ctx).
+		Model(&model.System{}).
+		Where(&model.System{ID: id}).
+		First(&system).Error; err != nil {
+		logging.Warn("Service: System not found for update using GORM", zap.String("id", id), zap.Error(err))
+		return nil, fmt.Errorf("system not found: %w", err)
 	}
 
 	// システム情報を更新
-	system.SystemName = req.SystemName
-	system.LocalGovernmentID = stringFromPtr(req.LocalGovernmentId)
-	system.MailAddress = string(req.MailAddress)
-	system.Telephone = stringFromPtr(req.Telephone)
-	system.Remark = stringFromPtr(req.Remark)
+	updates := model.System{
+		SystemName:        req.SystemName,
+		LocalGovernmentID: stringFromPtr(req.LocalGovernmentId),
+		MailAddress:       string(req.MailAddress),
+		Telephone:         stringFromPtr(req.Telephone),
+		Remark:            stringFromPtr(req.Remark),
+	}
 
-	result = s.dbClient.GormDB.WithContext(ctx).Save(&system)
-	if result.Error != nil {
+	if err := s.dbClient.GormDB.WithContext(ctx).
+		Model(&system).
+		Updates(updates).Error; err != nil {
 		logging.Error("Service: Failed to update system using GORM", 
 			zap.String("id", id),
-			zap.Error(result.Error),
+			zap.Error(err),
 		)
-		return nil, fmt.Errorf("failed to update system: %w", result.Error)
+		return nil, fmt.Errorf("failed to update system: %w", err)
+	}
+
+	// 更新後のデータを取得
+	if err := s.dbClient.GormDB.WithContext(ctx).
+		Model(&model.System{}).
+		Where(&model.System{ID: id}).
+		First(&system).Error; err != nil {
+		logging.Error("Service: Failed to retrieve updated system", zap.String("id", id), zap.Error(err))
+		return nil, fmt.Errorf("failed to retrieve updated system: %w", err)
 	}
 
 	response := s.convertToModelSystem(system)
@@ -185,7 +200,10 @@ func (s *Service) UpdateSystem(ctx context.Context, id string, req appservice.Up
 func (s *Service) DeleteSystem(ctx context.Context, id string) error {
 	logging.Info("Service: Deleting system using GORM", zap.String("id", id))
 	
-	result := s.dbClient.GormDB.WithContext(ctx).Delete(&model.System{}, "id = ?", id)
+	result := s.dbClient.GormDB.WithContext(ctx).
+		Where(&model.System{ID: id}).
+		Delete(&model.System{})
+	
 	if result.Error != nil {
 		logging.Error("Service: Failed to delete system using GORM", 
 			zap.String("id", id),
