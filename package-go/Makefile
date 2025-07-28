@@ -1,10 +1,11 @@
-.PHONY: help install sqlc migrate-up migrate-down migrate-create build run test clean
+.PHONY: help install sqlc gorm-gen migrate-up migrate-down migrate-create build run test clean
 
 # デフォルトのターゲット
 help:
 	@echo "利用可能なコマンド:"
 	@echo "  install       - 依存関係をインストール"
 	@echo "  sqlc          - SQLからGoコードを生成"
+	@echo "  gorm-gen      - GORM Genを使用してモデルを生成"
 	@echo "  migrate-up    - データベースマイグレーションを実行"
 	@echo "  migrate-down  - データベースマイグレーションをロールバック"
 	@echo "  migrate-create - 新しいマイグレーションファイルを作成"
@@ -22,6 +23,12 @@ install:
 sqlc:
 	@which sqlc > /dev/null || (echo "sqlcがインストールされていません。go install github.com/sqlc-dev/sqlc/cmd/sqlc@latest でインストールしてください" && exit 1)
 	cd database && sqlc generate
+
+# GORM Genを使用してモデル生成
+gorm-gen:
+	@echo "🚀 GORM Genでモデルを生成中..."
+	cd database/gen && go run generate.go
+	@echo "✅ GORM Genでのモデル生成完了"
 
 # データベースマイグレーション実行
 migrate-up:

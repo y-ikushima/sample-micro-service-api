@@ -12,14 +12,14 @@ const TableNameSystem = "system"
 
 // System mapped from table <system>
 type System struct {
-	ID                string    `gorm:"column:id;primaryKey;default:gen_random_uuid()" json:"id"`
-	SystemName        string    `gorm:"column:systemName;not null" json:"systemName"`
-	LocalGovernmentID string    `gorm:"column:localGovernmentId" json:"localGovernmentId"`
-	CreatedAt         time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt         time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
-	MailAddress       string    `gorm:"column:mailAddress;not null" json:"mailAddress"`
-	Telephone         string    `gorm:"column:telephone" json:"telephone"`
-	Remark            string    `gorm:"column:remark" json:"remark"`
+	ID                *string    `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	SystemName        string     `gorm:"column:systemName;type:character varying(255);not null" json:"systemName"`
+	LocalGovernmentID *string    `gorm:"column:localGovernmentId;type:character varying(6)" json:"localGovernmentId"`
+	CreatedAt         *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt         *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
+	MailAddress       string     `gorm:"column:mailAddress;type:character varying(255);not null" json:"mailAddress"`
+	Telephone         *string    `gorm:"column:telephone;type:character varying(255)" json:"telephone"`
+	Remark            *string    `gorm:"column:remark;type:character varying(1000)" json:"remark"`
 }
 
 // TableName System's table name

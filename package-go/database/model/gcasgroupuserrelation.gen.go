@@ -12,11 +12,11 @@ const TableNameGcasGroupUserRelation = "gcasGroupUserRelation"
 
 // GcasGroupUserRelation mapped from table <gcasGroupUserRelation>
 type GcasGroupUserRelation struct {
-	GcasUserID string    `gorm:"column:gcasUserId;primaryKey" json:"gcasUserId"`
-	GroupID    string    `gorm:"column:groupId;primaryKey" json:"groupId"`
-	CreatedAt  time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt  time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
-	UserRoleID int32     `gorm:"column:userRoleId;not null" json:"userRoleId"`
+	GcasUserID string     `gorm:"column:gcasUserId;type:uuid;primaryKey" json:"gcasUserId"`
+	GroupID    string     `gorm:"column:groupId;type:uuid;primaryKey" json:"groupId"`
+	CreatedAt  *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt  *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
+	UserRoleID int32      `gorm:"column:userRoleId;type:integer;not null" json:"userRoleId"`
 }
 
 // TableName GcasGroupUserRelation's table name

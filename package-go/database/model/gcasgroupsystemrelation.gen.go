@@ -12,10 +12,10 @@ const TableNameGcasGroupSystemRelation = "gcasGroupSystemRelation"
 
 // GcasGroupSystemRelation mapped from table <gcasGroupSystemRelation>
 type GcasGroupSystemRelation struct {
-	SystemID  string    `gorm:"column:systemId;primaryKey" json:"systemId"`
-	GroupID   string    `gorm:"column:groupId;primaryKey" json:"groupId"`
-	CreatedAt time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
+	SystemID  string     `gorm:"column:systemId;type:uuid;primaryKey" json:"systemId"`
+	GroupID   string     `gorm:"column:groupId;type:uuid;primaryKey" json:"groupId"`
+	CreatedAt *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
 }
 
 // TableName GcasGroupSystemRelation's table name

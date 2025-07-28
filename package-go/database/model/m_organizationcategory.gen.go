@@ -12,11 +12,11 @@ const TableNameMOrganizationCategory = "m_organizationCategory"
 
 // MOrganizationCategory mapped from table <m_organizationCategory>
 type MOrganizationCategory struct {
-	ID                         int32     `gorm:"column:id;primaryKey;autoIncrement:true" json:"id"`
-	OrganizationCategoryNameJa string    `gorm:"column:organizationCategoryNameJa;not null" json:"organizationCategoryNameJa"`
-	OrganizationCategoryNameEn string    `gorm:"column:organizationCategoryNameEn;not null" json:"organizationCategoryNameEn"`
-	CreatedAt                  time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt                  time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
+	ID                         int32      `gorm:"column:id;type:integer;primaryKey;autoIncrement:true" json:"id"`
+	OrganizationCategoryNameJa string     `gorm:"column:organizationCategoryNameJa;type:character varying(255);not null" json:"organizationCategoryNameJa"`
+	OrganizationCategoryNameEn string     `gorm:"column:organizationCategoryNameEn;type:character varying(255);not null" json:"organizationCategoryNameEn"`
+	CreatedAt                  *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt                  *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
 }
 
 // TableName MOrganizationCategory's table name

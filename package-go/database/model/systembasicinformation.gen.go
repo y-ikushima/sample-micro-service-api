@@ -12,14 +12,14 @@ const TableNameSystemBasicInformation = "systemBasicInformation"
 
 // SystemBasicInformation mapped from table <systemBasicInformation>
 type SystemBasicInformation struct {
-	ID                   string    `gorm:"column:id;primaryKey;default:gen_random_uuid()" json:"id"`
-	ProjectID            string    `gorm:"column:projectId;not null" json:"projectId"`
-	CorporateNumber      string    `gorm:"column:corporateNumber;not null" json:"corporateNumber"`
-	VendorName           string    `gorm:"column:vendorName;not null" json:"vendorName"`
-	OperationStartDate   string    `gorm:"column:operationStartDate;not null" json:"operationStartDate"`
-	StandardizationTasks string    `gorm:"column:standardizationTasks;not null" json:"standardizationTasks"`
-	CreatedAt            time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt            time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
+	ID                   *string    `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	ProjectID            string     `gorm:"column:projectId;type:uuid;not null" json:"projectId"`
+	CorporateNumber      string     `gorm:"column:corporateNumber;type:character varying(13);not null" json:"corporateNumber"`
+	VendorName           string     `gorm:"column:vendorName;type:character varying(255);not null" json:"vendorName"`
+	OperationStartDate   string     `gorm:"column:operationStartDate;type:character varying(255);not null" json:"operationStartDate"`
+	StandardizationTasks string     `gorm:"column:standardizationTasks;type:jsonb;not null" json:"standardizationTasks"`
+	CreatedAt            *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt            *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
 }
 
 // TableName SystemBasicInformation's table name

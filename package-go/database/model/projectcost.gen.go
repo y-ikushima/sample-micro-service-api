@@ -12,11 +12,11 @@ const TableNameProjectCost = "projectCost"
 
 // ProjectCost mapped from table <projectCost>
 type ProjectCost struct {
-	ProjectID string    `gorm:"column:projectId;primaryKey" json:"projectId"`
-	Year      int32     `gorm:"column:year;primaryKey" json:"year"`
-	Cost      int32     `gorm:"column:cost" json:"cost"`
-	CreatedAt time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
+	ProjectID string     `gorm:"column:projectId;type:uuid;primaryKey" json:"projectId"`
+	Year      int32      `gorm:"column:year;type:integer;primaryKey" json:"year"`
+	Cost      *int32     `gorm:"column:cost;type:integer" json:"cost"`
+	CreatedAt *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
 }
 
 // TableName ProjectCost's table name

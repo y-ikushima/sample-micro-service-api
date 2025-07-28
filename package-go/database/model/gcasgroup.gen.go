@@ -12,11 +12,11 @@ const TableNameGcasGroup = "gcasGroup"
 
 // GcasGroup mapped from table <gcasGroup>
 type GcasGroup struct {
-	ID              string    `gorm:"column:id;primaryKey;default:gen_random_uuid()" json:"id"`
-	GroupCategoryID int32     `gorm:"column:groupCategoryId" json:"groupCategoryId"`
-	GroupName       string    `gorm:"column:groupName;not null" json:"groupName"`
-	CreatedAt       time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt       time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
+	ID              *string    `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	GroupCategoryID *int32     `gorm:"column:groupCategoryId;type:integer" json:"groupCategoryId"`
+	GroupName       string     `gorm:"column:groupName;type:character varying(255);not null" json:"groupName"`
+	CreatedAt       *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt       *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
 }
 
 // TableName GcasGroup's table name

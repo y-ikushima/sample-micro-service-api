@@ -12,13 +12,13 @@ const TableNameMLocalGovernment = "m_localGovernment"
 
 // MLocalGovernment mapped from table <m_localGovernment>
 type MLocalGovernment struct {
-	ID                 string    `gorm:"column:id;primaryKey" json:"id"`
-	PrefectureName     string    `gorm:"column:prefectureName;not null" json:"prefectureName"`
-	CityName           string    `gorm:"column:cityName;not null" json:"cityName"`
-	PrefectureNameKana string    `gorm:"column:prefectureNameKana;not null" json:"prefectureNameKana"`
-	CityNameKana       string    `gorm:"column:cityNameKana;not null" json:"cityNameKana"`
-	CreatedAt          time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt          time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
+	ID                 string     `gorm:"column:id;type:character varying(6);primaryKey" json:"id"`
+	PrefectureName     string     `gorm:"column:prefectureName;type:character varying(255);not null" json:"prefectureName"`
+	CityName           string     `gorm:"column:cityName;type:character varying(255);not null" json:"cityName"`
+	PrefectureNameKana string     `gorm:"column:prefectureNameKana;type:character varying(255);not null" json:"prefectureNameKana"`
+	CityNameKana       string     `gorm:"column:cityNameKana;type:character varying(255);not null" json:"cityNameKana"`
+	CreatedAt          *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt          *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
 }
 
 // TableName MLocalGovernment's table name

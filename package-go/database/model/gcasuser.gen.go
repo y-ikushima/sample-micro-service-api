@@ -12,14 +12,14 @@ const TableNameGcasUser = "gcasUser"
 
 // GcasUser mapped from table <gcasUser>
 type GcasUser struct {
-	ID                     string    `gorm:"column:id;primaryKey;default:gen_random_uuid()" json:"id"`
-	FamilyName             string    `gorm:"column:familyName;not null" json:"familyName"`
-	GivenName              string    `gorm:"column:givenName;not null" json:"givenName"`
-	MailAddress            string    `gorm:"column:mailAddress;not null" json:"mailAddress"`
-	OrganizationCategoryID int32     `gorm:"column:organizationCategoryId" json:"organizationCategoryId"`
-	CreatedAt              time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt              time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
-	LastLoginAt            time.Time `gorm:"column:lastLoginAt" json:"lastLoginAt"`
+	ID                     *string    `gorm:"column:id;type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	FamilyName             string     `gorm:"column:familyName;type:character varying(60);not null" json:"familyName"`
+	GivenName              string     `gorm:"column:givenName;type:character varying(60);not null" json:"givenName"`
+	MailAddress            string     `gorm:"column:mailAddress;type:character varying(255);not null" json:"mailAddress"`
+	OrganizationCategoryID *int32     `gorm:"column:organizationCategoryId;type:integer" json:"organizationCategoryId"`
+	CreatedAt              *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt              *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
+	LastLoginAt            *time.Time `gorm:"column:lastLoginAt;type:timestamp with time zone" json:"lastLoginAt"`
 }
 
 // TableName GcasUser's table name

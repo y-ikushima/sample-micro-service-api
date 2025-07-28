@@ -12,10 +12,10 @@ const TableNameProjectSystemRelation = "projectSystemRelation"
 
 // ProjectSystemRelation mapped from table <projectSystemRelation>
 type ProjectSystemRelation struct {
-	ProjectID string    `gorm:"column:projectId;primaryKey" json:"projectId"`
-	SystemID  string    `gorm:"column:systemId;primaryKey" json:"systemId"`
-	CreatedAt time.Time `gorm:"column:createdAt;not null;default:now()" json:"createdAt"`
-	UpdatedAt time.Time `gorm:"column:updatedAt;not null;default:now()" json:"updatedAt"`
+	ProjectID string     `gorm:"column:projectId;type:uuid;primaryKey" json:"projectId"`
+	SystemID  string     `gorm:"column:systemId;type:uuid;primaryKey" json:"systemId"`
+	CreatedAt *time.Time `gorm:"column:createdAt;type:timestamp with time zone;not null;default:now()" json:"createdAt"`
+	UpdatedAt *time.Time `gorm:"column:updatedAt;type:timestamp with time zone;not null;default:now()" json:"updatedAt"`
 }
 
 // TableName ProjectSystemRelation's table name
